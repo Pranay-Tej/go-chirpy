@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -40,8 +41,9 @@ func main() {
 	}
 	apiConfig := ApiConfig{}
 	mux.Handle("/app/", apiConfig.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
-	mux.Handle("POST /admin/reset", http.HandlerFunc(apiConfig.reset))
-	mux.Handle("GET /admin/metrics", http.HandlerFunc(apiConfig.metrics))
+	mux.HandleFunc("POST /admin/reset", apiConfig.reset)
+	mux.HandleFunc("GET /admin/metrics", apiConfig.metrics)
+	mux.HandleFunc("POST /api/validate_chirp", handleValidateChirp)
 
 	mux.HandleFunc("GET /api/healthz", handleHealthz)
 
@@ -50,6 +52,45 @@ func main() {
 	if err := httpServer.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func handleValidateChirp(w http.ResponseWriter, r *http.Request) {
+	type Input struct {
+		Body string `json:"body"`
+	}
+	input := Input{}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		log.Printf("error decoding params: %v", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if len(input.Body) > 140 {
+		response := map[string]string{"error": "Chirp too long"}
+
+		data, err := json.Marshal(response)
+		if err != nil {
+			log.Printf("Error encoding json error response: %v", err)
+			w.WriteHeader(500)
+			return
+		}
+		w.WriteHeader(400)
+		w.Write(data)
+		return
+	}
+
+	response := map[string]bool{"valid": true}
+
+	data, err := json.Marshal(response)
+	if err != nil {
+		log.Printf("Error encoding json error response: %v", err)
+		w.WriteHeader(500)
+		return
+	}
+	w.WriteHeader(200)
+	w.Write(data)
+
 }
 
 func handleHealthz(w http.ResponseWriter, r *http.Request) {
