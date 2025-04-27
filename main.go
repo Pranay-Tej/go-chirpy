@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 	"sync/atomic"
 )
 
@@ -26,10 +25,9 @@ func (apiConfig *ApiConfig) reset(w http.ResponseWriter, r *http.Request) {
 
 func (apiConfig *ApiConfig) metrics(w http.ResponseWriter, r *http.Request) {
 	hits := apiConfig.fileServerHits.Load()
-	hitsStr := fmt.Sprintf("Hits: %v", strconv.Itoa(int(hits)))
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(hitsStr))
+	w.Write([]byte(fmt.Sprintf("<html><body><h1>Welcome, Chirpy Admin</h1><p>Chirpy has been visited %v times!</p></body></html>", hits)))
 }
 
 func main() {
@@ -42,8 +40,8 @@ func main() {
 	}
 	apiConfig := ApiConfig{}
 	mux.Handle("/app/", apiConfig.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
-	mux.Handle("POST /api/reset", http.HandlerFunc(apiConfig.reset))
-	mux.Handle("GET /api/metrics", http.HandlerFunc(apiConfig.metrics))
+	mux.Handle("POST /admin/reset", http.HandlerFunc(apiConfig.reset))
+	mux.Handle("GET /admin/metrics", http.HandlerFunc(apiConfig.metrics))
 
 	mux.HandleFunc("GET /api/healthz", handleHealthz)
 
