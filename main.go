@@ -1,36 +1,15 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
+	"database/sql"
 	"log"
 	"net/http"
-	"strings"
-	"sync/atomic"
+	"os"
+
+	"github.com/Pranay-Tej/go-chirpy/internal/database"
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
-
-type ApiConfig struct {
-	fileServerHits atomic.Int32
-}
-
-func (apiConfig *ApiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		apiConfig.fileServerHits.Add(1)
-		next.ServeHTTP(w, r)
-	})
-}
-
-func (apiConfig *ApiConfig) reset(w http.ResponseWriter, r *http.Request) {
-	apiConfig.fileServerHits.Store(0)
-	w.WriteHeader(http.StatusOK)
-}
-
-func (apiConfig *ApiConfig) metrics(w http.ResponseWriter, r *http.Request) {
-	hits := apiConfig.fileServerHits.Load()
-	w.Header().Set("Content-Type", "text/html")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("<html><body><h1>Welcome, Chirpy Admin</h1><p>Chirpy has been visited %v times!</p></body></html>", hits)))
-}
 
 func main() {
 	const port = "8080"
@@ -40,72 +19,37 @@ func main() {
 		Addr:    ":" + port,
 		Handler: mux,
 	}
-	apiConfig := ApiConfig{}
-	mux.Handle("/app/", apiConfig.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
-	mux.HandleFunc("POST /admin/reset", apiConfig.reset)
-	mux.HandleFunc("GET /admin/metrics", apiConfig.metrics)
-	mux.HandleFunc("POST /api/validate_chirp", handleValidateChirp)
+	godotenv.Load()
 
-	mux.HandleFunc("GET /api/healthz", handleHealthz)
+	platform := os.Getenv("PLATFORM")
+	if platform == "" {
+		log.Fatal("PLATFORM env not set")
+	}
+	dbURL := os.Getenv("DB_URL")
+	if dbURL == "" {
+		log.Fatal("DB_URL env not set")
+	}
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatal("error connection to db")
+	}
+	dbQueries := database.New(db)
+
+	apiConfig := ApiConfig{
+		db:       dbQueries,
+		platform: platform,
+	}
+
+	mux.Handle("/app/", apiConfig.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
+	mux.HandleFunc("POST /admin/reset", apiConfig.handleReset)
+	mux.HandleFunc("GET /admin/metrics", apiConfig.handleMetrics)
+	mux.HandleFunc("POST /api/validate_chirp", HandleValidateChirp)
+	mux.HandleFunc("POST /api/users", apiConfig.handleCreateUser)
+	mux.HandleFunc("GET /api/healthz", HandleHealthz)
 
 	log.Printf("Serving on port: %s\n", port)
 
 	if err := httpServer.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
-}
-
-func handleValidateChirp(w http.ResponseWriter, r *http.Request) {
-	type Input struct {
-		Body string `json:"body"`
-	}
-	input := Input{}
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		log.Printf("error decoding params: %v", err)
-		w.WriteHeader(500)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if len(input.Body) > 140 {
-		response := map[string]string{"error": "Chirp too long"}
-
-		data, err := json.Marshal(response)
-		if err != nil {
-			log.Printf("Error encoding json error response: %v", err)
-			w.WriteHeader(500)
-			return
-		}
-		w.WriteHeader(400)
-		w.Write(data)
-		return
-	}
-
-	words := strings.Split(input.Body, " ")
-	clean_words := make([]string, len(words))
-	for i, word := range words {
-		loweredWord := strings.ToLower(word)
-		if loweredWord == "kerfuffle" || loweredWord == "sharbert" || loweredWord == "fornax" {
-			clean_words[i] = "****"
-			continue
-		}
-		clean_words[i] = word
-	}
-	response := map[string]string{"cleaned_body": strings.Join(clean_words, " ")}
-
-	data, err := json.Marshal(response)
-	if err != nil {
-		log.Printf("Error encoding json error response: %v", err)
-		w.WriteHeader(500)
-		return
-	}
-	w.WriteHeader(200)
-	w.Write(data)
-
-}
-
-func handleHealthz(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
 }
