@@ -6,34 +6,47 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Pranay-Tej/go-chirpy/internal/auth"
+	"github.com/Pranay-Tej/go-chirpy/internal/database"
 	"github.com/google/uuid"
 )
 
-type User struct {
+type UserResponse struct {
 	ID        uuid.UUID `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Email     string    `json:"email"`
 }
+type LoginSignupInput struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
 
 func (apiConfig *ApiConfig) handleCreateUser(w http.ResponseWriter, r *http.Request) {
-	type Input struct {
-		Email string `json:"email"`
-	}
-	input := Input{}
+
+	input := LoginSignupInput{}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		log.Printf("error decoding params %v\n", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	user, err := apiConfig.db.CrateUser(r.Context(), input.Email)
+	hashedPassword, err := auth.HashPassword(input.Password)
+	if err != nil {
+		log.Printf("error hashing password: %v\n", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	user, err := apiConfig.db.CrateUser(r.Context(), database.CrateUserParams{
+		Email:          input.Email,
+		HashedPassword: hashedPassword,
+	})
 	if err != nil {
 		log.Printf("error decoding params %v\n", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	userJson := User{
+	userJson := UserResponse{
 		ID:        user.ID,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
