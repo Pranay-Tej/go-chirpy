@@ -19,7 +19,7 @@ type Chirp struct {
 	UserId    uuid.UUID `json:"user_id"`
 }
 
-func (apiConfig *ApiConfig) handleCreatePost(w http.ResponseWriter, r *http.Request) {
+func (apiConfig *ApiConfig) handleCreateChirp(w http.ResponseWriter, r *http.Request) {
 
 	type Input struct {
 		UserId uuid.UUID `json:"user_id"`
@@ -27,7 +27,7 @@ func (apiConfig *ApiConfig) handleCreatePost(w http.ResponseWriter, r *http.Requ
 	}
 	input := Input{}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		log.Printf("error decoding params: %v", err)
+		log.Printf("error decoding params: %v\n", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -39,7 +39,7 @@ func (apiConfig *ApiConfig) handleCreatePost(w http.ResponseWriter, r *http.Requ
 
 		data, err := json.Marshal(response)
 		if err != nil {
-			log.Printf("Error encoding json error response: %v", err)
+			log.Printf("Error encoding json error response: %v\n", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -70,7 +70,7 @@ func (apiConfig *ApiConfig) handleCreatePost(w http.ResponseWriter, r *http.Requ
 	})
 
 	if err != nil {
-		log.Printf("Error creating chirp: %v", err)
+		log.Printf("Error creating chirp: %v\n", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 
@@ -86,7 +86,7 @@ func (apiConfig *ApiConfig) handleCreatePost(w http.ResponseWriter, r *http.Requ
 
 	data, err := json.Marshal(chirpJson)
 	if err != nil {
-		log.Printf("Error encoding json error response: %v", err)
+		log.Printf("Error encoding json error response: %v\n", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

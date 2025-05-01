@@ -22,13 +22,13 @@ func (apiConfig *ApiConfig) handleCreateUser(w http.ResponseWriter, r *http.Requ
 	}
 	input := Input{}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		log.Printf("error decoding params %v", err)
+		log.Printf("error decoding params %v\n", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	user, err := apiConfig.db.CrateUser(r.Context(), input.Email)
 	if err != nil {
-		log.Printf("error decoding params %v", err)
+		log.Printf("error decoding params %v\n", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -41,7 +41,7 @@ func (apiConfig *ApiConfig) handleCreateUser(w http.ResponseWriter, r *http.Requ
 	}
 	data, err := json.Marshal(userJson)
 	if err != nil {
-		log.Printf("error decoding params %v", err)
+		log.Printf("error decoding params %v\n", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

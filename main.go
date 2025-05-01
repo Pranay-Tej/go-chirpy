@@ -45,7 +45,8 @@ func main() {
 	mux.HandleFunc("GET /admin/metrics", apiConfig.handleMetrics)
 	mux.HandleFunc("POST /api/users", apiConfig.handleCreateUser)
 	mux.HandleFunc("GET /api/healthz", HandleHealthz)
-	mux.HandleFunc("POST /api/chirps", apiConfig.handleCreatePost)
+	mux.HandleFunc("POST /api/chirps", apiConfig.handleCreateChirp)
+	mux.HandleFunc("GET /api/chirps", apiConfig.handleGetAllChirps)
 
 	log.Printf("Serving on port: %s\n", port)
 
