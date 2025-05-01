@@ -43,9 +43,9 @@ func main() {
 	mux.Handle("/app/", apiConfig.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
 	mux.HandleFunc("POST /admin/reset", apiConfig.handleReset)
 	mux.HandleFunc("GET /admin/metrics", apiConfig.handleMetrics)
-	mux.HandleFunc("POST /api/validate_chirp", HandleValidateChirp)
 	mux.HandleFunc("POST /api/users", apiConfig.handleCreateUser)
 	mux.HandleFunc("GET /api/healthz", HandleHealthz)
+	mux.HandleFunc("POST /api/chirps", apiConfig.handleCreatePost)
 
 	log.Printf("Serving on port: %s\n", port)
 
