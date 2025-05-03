@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Pranay-Tej/go-chirpy/internal/auth"
 	"github.com/Pranay-Tej/go-chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -22,8 +23,7 @@ type Chirp struct {
 func (apiConfig *ApiConfig) handleCreateChirp(w http.ResponseWriter, r *http.Request) {
 
 	type Input struct {
-		UserId uuid.UUID `json:"user_id"`
-		Body   string    `json:"body"`
+		Body string `json:"body"`
 	}
 	input := Input{}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -61,10 +61,21 @@ func (apiConfig *ApiConfig) handleCreateChirp(w http.ResponseWriter, r *http.Req
 	}
 	cleanedBody := strings.Join(clean_words, " ")
 
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	userId, err := auth.ValidateJwt(token, apiConfig.jwtSecret)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
 	chirp, err := apiConfig.db.CreateChirp(r.Context(), database.CreateChirpParams{
 		Body: cleanedBody,
 		UserID: uuid.NullUUID{
-			UUID:  input.UserId,
+			UUID:  userId,
 			Valid: true,
 		},
 	})

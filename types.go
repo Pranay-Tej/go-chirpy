@@ -10,4 +10,5 @@ type ApiConfig struct {
 	fileServerHits atomic.Int32
 	db             *database.Queries
 	platform       string
+	jwtSecret      string
 }

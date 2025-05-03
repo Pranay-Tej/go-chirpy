@@ -17,14 +17,14 @@ type UserResponse struct {
 	UpdatedAt time.Time `json:"updated_at"`
 	Email     string    `json:"email"`
 }
-type LoginSignupInput struct {
+type SignupInput struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
 func (apiConfig *ApiConfig) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 
-	input := LoginSignupInput{}
+	input := SignupInput{}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		log.Printf("error decoding params %v\n", err)
 		w.WriteHeader(http.StatusInternalServerError)
