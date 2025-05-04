@@ -2,27 +2,27 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/Pranay-Tej/go-chirpy/internal/auth"
+	"github.com/Pranay-Tej/go-chirpy/internal/database"
 	"github.com/google/uuid"
 )
 
 type LoginResponse struct {
-	ID        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Email     string    `json:"email"`
-	Token     string    `json:"token"`
+	ID           uuid.UUID `json:"id"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	Email        string    `json:"email"`
+	Token        string    `json:"token"`
+	RefreshToken string    `json:"refresh_token"`
 }
 
 type LoginInput struct {
-	Email            string `json:"email"`
-	Password         string `json:"password"`
-	ExpiresInSeconds int64  `json:"expires_in_seconds"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 func (apiConfig *ApiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -54,23 +54,31 @@ func (apiConfig *ApiConfig) handleLogin(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	fmt.Printf("input.ExpiresInSeconds %v", input.ExpiresInSeconds)
-	expiresIn := time.Hour
-	if input.ExpiresInSeconds > 0 && input.ExpiresInSeconds < int64(time.Hour.Seconds()) {
-		expiresIn = time.Duration(input.ExpiresInSeconds) * time.Second
+	token, err := auth.MakeJwt(dbUser.ID, apiConfig.jwtSecret, time.Hour)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
-	token, err := auth.MakeJwt(dbUser.ID, apiConfig.jwtSecret, expiresIn)
+	refreshToken := auth.MakeRefreshToken()
+
+	err = apiConfig.db.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{
+		Token:     refreshToken,
+		ExpiresAt: time.Now().AddDate(0, 0, 60),
+		UserID:    dbUser.ID,
+	})
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	user := LoginResponse{
-		ID:        dbUser.ID,
-		CreatedAt: dbUser.CreatedAt,
-		UpdatedAt: dbUser.UpdatedAt,
-		Email:     dbUser.Email,
-		Token:     token,
+		ID:           dbUser.ID,
+		CreatedAt:    dbUser.CreatedAt,
+		UpdatedAt:    dbUser.UpdatedAt,
+		Email:        dbUser.Email,
+		Token:        token,
+		RefreshToken: refreshToken,
 	}
 	userJson, err := json.Marshal(user)
 	if err != nil {
