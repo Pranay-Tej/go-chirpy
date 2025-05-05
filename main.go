@@ -57,6 +57,7 @@ func main() {
 	mux.HandleFunc("POST /api/chirps", apiConfig.handleCreateChirp)
 	mux.HandleFunc("GET /api/chirps", apiConfig.handleGetAllChirps)
 	mux.HandleFunc("GET /api/chirps/{id}", apiConfig.handleGetChirpById)
+	mux.HandleFunc("DELETE /api/chirps/{id}", apiConfig.handleDeleteChirpById)
 
 	log.Printf("Serving on port: %s\n", port)
 
