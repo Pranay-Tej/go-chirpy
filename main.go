@@ -49,6 +49,7 @@ func main() {
 	mux.HandleFunc("POST /admin/reset", apiConfig.handleReset)
 	mux.HandleFunc("GET /admin/metrics", apiConfig.handleMetrics)
 	mux.HandleFunc("POST /api/users", apiConfig.handleCreateUser)
+	mux.HandleFunc("PUT /api/users", apiConfig.handleUpdateUser)
 	mux.HandleFunc("POST /api/login", apiConfig.handleLogin)
 	mux.HandleFunc("POST /api/refresh", apiConfig.handleRefreshToken)
 	mux.HandleFunc("POST /api/revoke", apiConfig.handleRevokeRefreshToken)
