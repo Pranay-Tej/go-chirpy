@@ -44,11 +44,17 @@ func (apiConfig *ApiConfig) handleUpdateUser(w http.ResponseWriter, r *http.Requ
 		ID:             userId,
 	})
 
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	userJson := UserResponse{
-		ID:        user.ID,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		Email:     user.Email,
+		ID:          user.ID,
+		CreatedAt:   user.CreatedAt,
+		UpdatedAt:   user.UpdatedAt,
+		Email:       user.Email,
+		IsChirpyRed: user.IsChirpyRed,
 	}
 
 	data, err := json.Marshal(userJson)
