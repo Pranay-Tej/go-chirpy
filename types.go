@@ -13,6 +13,7 @@ type ApiConfig struct {
 	db             *database.Queries
 	platform       string
 	jwtSecret      string
+	polkaKey       string
 }
 
 type UserResponse struct {
