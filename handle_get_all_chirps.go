@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"slices"
 
 	"github.com/Pranay-Tej/go-chirpy/internal/database"
 	"github.com/google/uuid"
@@ -37,6 +38,10 @@ func (apiConfig *ApiConfig) handleGetAllChirps(w http.ResponseWriter, r *http.Re
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+	}
+	sorting := r.URL.Query().Get("sort")
+	if sorting == "desc" {
+		slices.Reverse(chirps)
 	}
 
 	var jsonChirps []Chirp = make([]Chirp, 0)
