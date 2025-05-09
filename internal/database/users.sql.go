@@ -72,7 +72,8 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 
 const setUserChirpRedStatus = `-- name: SetUserChirpRedStatus :exec
 UPDATE users
-SET is_chirpy_red = $1
+SET is_chirpy_red = $1,
+    updated_at = NOW()
 WHERE id = $2
 `
 
